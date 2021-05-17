@@ -9,12 +9,12 @@
 #define delayMicroSecs 500
 
 enum swingerMode {
-  none,
+  idle,
   grab,
   drop
 };
 
-swingerMode mode = none;
+swingerMode mode = idle;
 
 void setup() {
   pinMode(stepPin, OUTPUT);
@@ -28,11 +28,11 @@ void setup() {
 void loop() {
   if(mode == grab) {
     performDownUpCycle();
-    mode = none;
+    mode = idle;
   }
   if(mode == drop) {
     performUpDownCycle();
-    mode = none;
+    mode = idle;
   }
 }
 

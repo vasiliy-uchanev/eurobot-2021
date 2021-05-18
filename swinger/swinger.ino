@@ -26,6 +26,7 @@ int topPosition = 0;
 int idlePosition = 0;
 int currentPosition = 0;
 bool movingUp = false;
+bool debugEnabled = true;
 
 void setup()
 {
@@ -39,6 +40,12 @@ void setup()
   pinMode(touchedFloorInterruptPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(touchedRoofInterruptPin), touchedRoofInterrupt, FALLING);
   attachInterrupt(digitalPinToInterrupt(touchedFloorInterruptPin), touchedFloorInterrupt, FALLING);
+
+  if (debugEnabled)
+  {
+    Serial.begin(115200);
+    Serial.println("initialized");
+  }
 }
 
 void loop()
@@ -63,21 +70,30 @@ void loop()
 
 void calibrate()
 {
+  debugPrint("Calibrating...");
   touchedFloor = false;
   setDirectionDown();
+  debugPrint("Going down...");
   while (!touchedFloor)
   {
     spin(calibrationStep);
   }
+  debugPrint("Done.");
+  delay(100);
   currentPosition = 0;
   touchedRoof = false;
   setDirectionUp();
+  debugPrint("Going up...");
   while (!touchedRoof)
   {
     spin(calibrationStep);
   }
+  debugPrint("Done.");
+  delay(100);
   topPosition = currentPosition;
   idlePosition = currentPosition * 0.75;
+  debugPrint("top position: ");debugPrint(String(topPosition));
+  debugPrint("idle position: ");debugPrint(String(idlePosition));
   mode = resetPosition;
 }
 
@@ -158,4 +174,12 @@ void moveToTheIdlePoint()
     spin(idlePosition - currentPosition);
   }
   mode = idle;
+}
+
+void debugPrint(String message)
+{
+  if (debugEnabled)
+  {
+    Serial.println(message);
+  }
 }

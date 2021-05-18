@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #define interrruptDropPin 2
 #define interruptGrabPin 3
 #define dirPin 4
@@ -8,15 +9,19 @@
 #define stepsUpCount 1000
 #define delayMicroSecs 500
 
-enum swingerMode {
+enum swingerMode
+{
+  calibration,
+  resetPosition,
   idle,
   grab,
   drop
 };
 
-swingerMode mode = idle;
+swingerMode mode = calibration;
 
-void setup() {
+void setup()
+{
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
   pinMode(testHighPin, OUTPUT);
@@ -25,27 +30,40 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(interruptGrabPin), handleGrabCall, RISING);
 }
 
-void loop() {
-  if(mode == grab) {
+void loop()
+{
+  if (mode == grab)
+  {
     performDownUpCycle();
     mode = idle;
   }
-  if(mode == drop) {
+  if (mode == drop)
+  {
     performUpDownCycle();
     mode = idle;
   }
+  if (mode == calibration)
+  {
+    performCalibration();
+    mode = resetPosition;
+  }
+  if(mode == resetPosition) {
+    moveToTheIdlePoint();
+  }
 }
 
-void handleGrabCall() {
+void handleGrabCall()
+{
   mode = grab;
 }
 
-void handleDropCall() {
+void handleDropCall()
+{
   mode = drop;
 }
 
-
-void performDownUpCycle() {
+void performDownUpCycle()
+{
   digitalWrite(dirPin, HIGH);
   spin(stepsUpCount);
   delay(100);
@@ -53,7 +71,8 @@ void performDownUpCycle() {
   spin(stepsUpCount);
 }
 
-void performUpDownCycle() {
+void performUpDownCycle()
+{
   digitalWrite(dirPin, LOW);
   spin(stepsDownCount);
   delay(100);
@@ -61,8 +80,10 @@ void performUpDownCycle() {
   spin(stepsDownCount);
 }
 
-void spin(int steps) {
-  for (int i = 0; i < steps; i++) {
+void spin(int steps)
+{
+  for (int i = 0; i < steps; i++)
+  {
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(delayMicroSecs);
     digitalWrite(stepPin, LOW);

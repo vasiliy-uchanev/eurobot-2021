@@ -1,12 +1,13 @@
 #include <Arduino.h>
-#define interrruptDropPin 2
-#define interruptGrabPin 3
+#define touchedRoofInterruptPin 2
+#define touchedFloorInterruptPin 3
 #define dirPin 4
 #define stepPin 5
 #define testHighPin 6
 
 #define stepsDownCount 4000
 #define stepsUpCount 1000
+#define calibrationStep 10
 #define delayMicroSecs 500
 
 enum swingerMode
@@ -19,66 +20,106 @@ enum swingerMode
 };
 
 swingerMode mode = calibration;
+bool touchedFloor = false;
+bool touchedRoof = false;
+int topPosition = 0;
+int idlePosition = 0;
+int currentPosition = 0;
+bool movingUp = false;
 
 void setup()
 {
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
+
   pinMode(testHighPin, OUTPUT);
   digitalWrite(testHighPin, HIGH);
-  attachInterrupt(digitalPinToInterrupt(interrruptDropPin), handleDropCall, RISING);
-  attachInterrupt(digitalPinToInterrupt(interruptGrabPin), handleGrabCall, RISING);
+
+  pinMode(touchedRoofInterruptPin, INPUT_PULLUP);
+  pinMode(touchedFloorInterruptPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(touchedRoofInterruptPin), touchedRoofInterrupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(touchedFloorInterruptPin), touchedFloorInterrupt, FALLING);
 }
 
 void loop()
 {
-  if (mode == grab)
-  {
-    performDownUpCycle();
-    mode = idle;
-  }
-  if (mode == drop)
-  {
-    performUpDownCycle();
-    mode = idle;
-  }
   if (mode == calibration)
   {
-    performCalibration();
-    mode = resetPosition;
+    calibrate();
   }
-  if(mode == resetPosition) {
+  if (mode == resetPosition)
+  {
     moveToTheIdlePoint();
   }
+  // if (mode == grab)
+  // {
+  //   performDownUpCycle();
+  // }
+  // if (mode == drop)
+  // {
+  //   performUpDownCycle();
+  // }
 }
 
-void handleGrabCall()
+void calibrate()
 {
-  mode = grab;
+  touchedFloor = false;
+  setDirectionDown();
+  while (!touchedFloor)
+  {
+    spin(calibrationStep);
+  }
+  currentPosition = 0;
+  touchedRoof = false;
+  setDirectionUp();
+  while (!touchedRoof)
+  {
+    spin(calibrationStep);
+  }
+  topPosition = currentPosition;
+  idlePosition = currentPosition * 0.75;
+  mode = resetPosition;
 }
 
-void handleDropCall()
+void touchedFloorInterrupt()
 {
-  mode = drop;
+  touchedFloor = true;
 }
 
-void performDownUpCycle()
+void touchedRoofInterrupt()
 {
-  digitalWrite(dirPin, HIGH);
-  spin(stepsUpCount);
-  delay(100);
-  digitalWrite(dirPin, LOW);
-  spin(stepsUpCount);
+  touchedRoof = true;
 }
 
-void performUpDownCycle()
-{
-  digitalWrite(dirPin, LOW);
-  spin(stepsDownCount);
-  delay(100);
-  digitalWrite(dirPin, HIGH);
-  spin(stepsDownCount);
-}
+// void handleGrabCall()
+// {
+//   mode = grab;
+// }
+
+// void handleDropCall()
+// {
+//   mode = drop;
+// }
+
+// void performDownUpCycle()
+// {
+//   setDirectionUp();
+//   spin(stepsUpCount);
+//   delay(100);
+//   setDirectionDown();
+//   spin(stepsUpCount);
+//   mode = idle;
+// }
+
+// void performUpDownCycle()
+// {
+//   setDirectionDown();
+//   spin(stepsDownCount);
+//   delay(100);
+//   setDirectionUp();
+//   spin(stepsDownCount);
+//   mode = idle;
+// }
 
 void spin(int steps)
 {
@@ -89,4 +130,32 @@ void spin(int steps)
     digitalWrite(stepPin, LOW);
     delayMicroseconds(delayMicroSecs);
   }
+  currentPosition = movingUp ? currentPosition + steps : currentPosition - steps;
+}
+
+void setDirectionDown()
+{
+  digitalWrite(dirPin, LOW);
+  movingUp = false;
+}
+
+void setDirectionUp()
+{
+  digitalWrite(dirPin, HIGH);
+  movingUp = true;
+}
+
+void moveToTheIdlePoint()
+{
+  if (currentPosition > idlePosition)
+  {
+    setDirectionDown();
+    spin(currentPosition - idlePosition);
+  }
+  else
+  {
+    setDirectionUp();
+    spin(idlePosition - currentPosition);
+  }
+  mode = idle;
 }

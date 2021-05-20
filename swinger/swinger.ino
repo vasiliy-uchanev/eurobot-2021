@@ -4,6 +4,8 @@
 #define dirPin 4
 #define stepPin 5
 #define testHighPin 6
+#define grabPin 7
+#define dropPin 8
 
 #define stepsDownCount 4000
 #define stepsUpCount 1000
@@ -32,6 +34,9 @@ void setup()
 {
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
+  
+  pinMode(grabPin, INPUT);
+  pinMode(dropPin, INPUT);
 
   pinMode(testHighPin, OUTPUT);
   digitalWrite(testHighPin, HIGH);
@@ -58,14 +63,17 @@ void loop()
   {
     moveToTheIdlePoint();
   }
-  // if (mode == grab)
-  // {
-  //   performDownUpCycle();
-  // }
-  // if (mode == drop)
-  // {
-  //   performUpDownCycle();
-  // }
+  if (mode == idle) {
+    checkMothershipConnections();
+  }
+  if (mode == grab)
+  {
+    performDownUpCycle();
+  }
+  if (mode == drop)
+  {
+    performUpDownCycle();
+  }
 }
 
 void calibrate()
@@ -97,6 +105,15 @@ void calibrate()
   mode = resetPosition;
 }
 
+void checkMothershipConnections() {
+  if(digitalRead(grabPin) == HIGH) {
+    mode = grab;
+  }
+  else if (digitalRead(dropPin) == HIGH) {
+    mode = drop;
+  }
+}
+
 void touchedFloorInterrupt()
 {
   touchedFloor = true;
@@ -107,35 +124,25 @@ void touchedRoofInterrupt()
   touchedRoof = true;
 }
 
-// void handleGrabCall()
-// {
-//   mode = grab;
-// }
+void performDownUpCycle()
+{
+  setDirectionUp();
+  spin(stepsUpCount);
+  delay(100);
+  setDirectionDown();
+  spin(stepsUpCount);
+  mode = idle;
+}
 
-// void handleDropCall()
-// {
-//   mode = drop;
-// }
-
-// void performDownUpCycle()
-// {
-//   setDirectionUp();
-//   spin(stepsUpCount);
-//   delay(100);
-//   setDirectionDown();
-//   spin(stepsUpCount);
-//   mode = idle;
-// }
-
-// void performUpDownCycle()
-// {
-//   setDirectionDown();
-//   spin(stepsDownCount);
-//   delay(100);
-//   setDirectionUp();
-//   spin(stepsDownCount);
-//   mode = idle;
-// }
+void performUpDownCycle()
+{
+  setDirectionDown();
+  spin(stepsDownCount);
+  delay(100);
+  setDirectionUp();
+  spin(stepsDownCount);
+  mode = idle;
+}
 
 void spin(int steps)
 {
@@ -151,13 +158,13 @@ void spin(int steps)
 
 void setDirectionDown()
 {
-  digitalWrite(dirPin, LOW);
+  digitalWrite(dirPin, HIGH);
   movingUp = false;
 }
 
 void setDirectionUp()
 {
-  digitalWrite(dirPin, HIGH);
+  digitalWrite(dirPin, LOW);
   movingUp = true;
 }
 

@@ -7,8 +7,6 @@
 #define grabPin 7
 #define dropPin 8
 
-#define stepsDownCount 4000
-#define stepsUpCount 1000
 #define calibrationStep 10
 #define delayMicroSecs 500
 
@@ -68,11 +66,11 @@ void loop()
   }
   if (mode == grab)
   {
-    performDownUpCycle();
+    spinToTheBottomAndBack();
   }
   if (mode == drop)
   {
-    performUpDownCycle();
+    spinToTheTopAndBack();
   }
 }
 
@@ -124,24 +122,20 @@ void touchedRoofInterrupt()
   touchedRoof = true;
 }
 
-void performDownUpCycle()
+void spinToTheTopAndBack()
 {
   setDirectionUp();
-  spin(stepsUpCount);
+  spin(topPosition - currentPosition);
   delay(100);
-  setDirectionDown();
-  spin(stepsUpCount);
-  mode = idle;
+  mode = resetPosition;
 }
 
-void performUpDownCycle()
+void spinToTheBottomAndBack()
 {
   setDirectionDown();
-  spin(stepsDownCount);
+  spin(currentPosition);
   delay(100);
-  setDirectionUp();
-  spin(stepsDownCount);
-  mode = idle;
+  mode = resetPosition;
 }
 
 void spin(int steps)
